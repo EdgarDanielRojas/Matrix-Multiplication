@@ -100,7 +100,7 @@ void *ixj(void *arg) {
 			sum += Get(&buffer);
 			//printf("Diagonal read from spot %d sum is at %d\n",j,sum );
 		}
-		printf("Suma de la diagonal es %d\n", sum);
+		printf("\nSuma de la diagonal es %d\n", sum);
 	}
 	//printf("Thread %d got result %d\n",index,result );
 	pthread_exit((void *)result);
