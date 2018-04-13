@@ -146,11 +146,12 @@ int main(void) {
 	  printf("\nLa matriz resultante es la siguiente \n");
 	  for (int row=0; row<DIM; row++)
 		{
+			printf("|");
 		    for(int columns=0; columns<DIM; columns++)
 		        {
-		         	printf("%d     ", resultingMatrix[row][columns]);
+		         	printf("   %5d   ", resultingMatrix[row][columns]);
 		        }
-		    printf("\n");
+		    printf("|\n");
 	 	}
 	  return 0;
 }
