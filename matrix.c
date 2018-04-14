@@ -1,12 +1,40 @@
+/*
+ * Copyright (c) 2018 Edgar Daniel Rojas Vazquez
+ *
+ * @file    matrix.c
+ *
+ * @author  Edgar Daniel Rojas Vazquez & Abelardo López Lagunas
+ *
+ * @date    Thur Apr 11 21:00:00 CST 2018
+ *
+ * @brief   Program that multiplies two matrixes using threads
+ *
+ * References:
+ *          The program uses parts of code from the producer consumer example
+ *			and from the partial sum example.
+ *
+ * Restrictions:
+ *          There is no validation in the code
+ *
+ * Revision history:
+ *          Fri Apr 12 17:40:00 CST 2018 -- Added this header and finalized the program.
+ *
+ * @note    Homework for the TC2025 class. Some code is utilized from programs that the profesor
+ *			has given us, that is why he is an author as well.
+ *
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
 
-pthread_mutex_t threadMutex=PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t flagMutex=PTHREAD_MUTEX_INITIALIZER;
-#define DIM 3
-int arrays[2][DIM][DIM];
 
+pthread_mutex_t threadMutex=PTHREAD_MUTEX_INITIALIZER; 	// Initialization of our mutex that will be used to access shared arrays
+pthread_mutex_t flagMutex=PTHREAD_MUTEX_INITIALIZER; 	// Initialization of mutex used as a type of flag
+#define DIM 3											// We define a constant for the dimension of our array [DIM X DIM]
+int arrays[2][DIM][DIM];								// Declaration of our two arrays that will be multiplied.
+
+// Data structure that has variables needed to implement producer-consumer algorithm
 struct prodcons {
   int buffer[DIM];   /* Data to store */
   pthread_mutex_t key;       /* Synchronization variable */
@@ -15,6 +43,7 @@ struct prodcons {
   pthread_cond_t notFull;    /* Signal buffer NOT full */
 } buffer;
 
+// Function that initializes variables of the previous declared structure
 void init(struct prodcons * b)
 {
   pthread_mutex_init(&b->key, NULL);
@@ -67,52 +96,64 @@ int Get (struct prodcons * b)
   return (data);
 }
 
-
+/* This is the function called by individual threads used to calculate the multiplication */
 void *ixj(void *arg) {
-	unsigned int * result;
+
+	/* This section is used to declare variables that are used by each thread*/
+	unsigned int * result; // Used to store result and return it to main thread. Must be stored in heap to avoid memory errors
 	result = (unsigned int *) malloc (sizeof(unsigned int));
-	unsigned int index;
+	unsigned int index; // Index is the name of the thread
 	index = *((unsigned int *) (arg));
-	int tempArrays[2][DIM];
-	int row = index/DIM;
-	int column = index%DIM;
+	int tempArrays[2][DIM]; // Arrays used to store the row and column to be multiplied
+	int row = index/DIM; 	// The row in which the thread is calculating the result
+	int column = index%DIM;	// The column in which the thread is calculating the result
+
+	// The thread mutex is used to read the arrays
+	// Not really necessary but in the specifications to use mutex
    	pthread_mutex_lock(&threadMutex);
+   		// Critical Section
    		for(int i =0;i<DIM;i++){
 	   		tempArrays[0][i]=arrays[0][row][i];
 			tempArrays[1][i]=arrays[1][i][column];
    		}
 	pthread_mutex_unlock(&threadMutex);
+
+	// Calculate the result of the multiplication of the row and column
 	for(int j=0;j<DIM;j++){
 		*result += tempArrays[0][j]*tempArrays[1][j];
 	}
 
+	// Check to see if our thread is calculating a value in the diagonal. 
+	// If true the result is sent to buffer
 	if(index%(DIM+1)==0){
-		//printf("Thread %d is in diagonal, storing my result\n",index );
 		Store(&buffer,*result);
-		//printf("Thread %d finished storing result\n",index );
 	}
 
-
+	// flagMutex is tried to see if a thread is calculating the sum of diagonals. 
+	// If no thread is calculating, the thread takes over and starts consuming from our buffer
+	// to get the sum.
 	if(pthread_mutex_trylock(&flagMutex)==0){
 		int sum=0;
-		//printf("Thread %d is adding the diagonal\n", index);
 		for(int j=0;j<DIM;j++){
 			sum += Get(&buffer);
-			//printf("Diagonal read from spot %d sum is at %d\n",j,sum );
 		}
 		printf("\nSuma de la diagonal es %d\n", sum);
 	}
-	//printf("Thread %d got result %d\n",index,result );
+
+	// Return result to main thread.
 	pthread_exit((void *)result);
 }
 
 /* Main entry point creates several threads and assigns them a unique id */
 int main(void) {
+	// Variables are initialized which are used in main thread.
 	const int MAXTHREADS = DIM*DIM;
-  	pthread_t threads[MAXTHREADS];
-  	unsigned int threadName[MAXTHREADS];
-  	unsigned int * ixjSum;
-  	init(&buffer);
+  	pthread_t threads[MAXTHREADS]; // Thread array created
+  	unsigned int threadName[MAXTHREADS]; // Array used to store thread name
+  	unsigned int * ixjSum; // Variable where returned value from arrays will be stored.
+  	// Call init to initialize buffer variables
+  	init(&buffer); 
+  	// Values are read into our arrays
   	for(int i=0;i<2;i++){
   		printf("\n");
   		for(int j=0;j<DIM;j++){
@@ -129,20 +170,25 @@ int main(void) {
 	  	if (pthread_create(&threads[i], NULL, ixj,&threadName[i]) != 0)
 			perror("error creating thread.");
 	  }
+
+	  // An array to store incoming results is created
 	  int resultingMatrix[DIM][DIM];
+	  // Initialization of variables that store the row and column of the data received
 	  int row = 0;
 	  int column = 0;
 	  /* Now wait for them in-order, this is inefficient */
 	  for (unsigned int i = 0; i < MAXTHREADS; i++){
 	    if (pthread_join ( threads[i], (void **)&ixjSum) != 0)
 		  perror("error joining thread.");
+		// Row and Column is calculated
 		int row = i/DIM;
 		int column = i%DIM;
-		//printf("Received info from thread %d\n",i);
+		// Result saved in our matrix
 		resultingMatrix[row][column] = *ixjSum;
 		free (ixjSum);
 	  }
 
+	  // Matrix is printed in a nice format
 	  printf("\nLa matriz resultante es la siguiente \n");
 	  for (int row=0; row<DIM; row++)
 		{
