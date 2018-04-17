@@ -25,3 +25,10 @@ El programa se puede correr insertando un archivo de texto o sin archivo de text
 ./matrix archivo.txt
 
 ./matrix 
+
+#Text input
+The program reads the matrix with the following format in the text input 
+
+1 2 3  4 3 5
+3 4 4  2 1 6
+4 5 6  2 4 6
