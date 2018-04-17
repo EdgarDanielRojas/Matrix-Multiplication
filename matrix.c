@@ -27,12 +27,48 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
-
+#include <ctype.h>
 
 pthread_mutex_t threadMutex=PTHREAD_MUTEX_INITIALIZER; 	// Initialization of our mutex that will be used to access shared arrays
 pthread_mutex_t flagMutex=PTHREAD_MUTEX_INITIALIZER; 	// Initialization of mutex used as a type of flag
 #define DIM 3											// We define a constant for the dimension of our array [DIM X DIM]
 int arrays[2][DIM][DIM];								// Declaration of our two arrays that will be multiplied.
+// Used to read integers from text files
+int GetInt (FILE *fp) {
+    int	c,i;	   /* Character read and integer representation of it */
+    int sign = 1;
+
+    do {
+        c = getc (fp);                          /* Get next character */
+        if ( c == '#' )	                          /* Skip the comment */
+            do {
+                c = getc (fp);
+            } while ( c != '\n');
+        if ( c == '-')
+            sign = -1;
+    } while (!isdigit(c) && !feof(fp));
+
+    if (feof(fp)){
+        return (EXIT_FAILURE);
+    } else {
+    /* Found 1st digit, begin conversion until a non-digit is found */
+        i = 0;
+        while (isdigit (c) && !feof(fp)){
+            i = (i*10) + (c - '0');
+            c = getc (fp);
+        }
+
+        return (i*sign);
+    }
+}
+
+// Displays error message
+void ErrorMsg (char * function, char *message){
+
+    printf ("\nError in function %s\n", function);
+    printf ("\t %s\n", message);
+    printf ("The program will terminate.\n\n");
+}
 
 // Data structure that has variables needed to implement producer-consumer algorithm
 struct prodcons {
@@ -145,7 +181,7 @@ void *ixj(void *arg) {
 }
 
 /* Main entry point creates several threads and assigns them a unique id */
-int main(void) {
+int main(int argc, const char * argv[]) {
 	// Variables are initialized which are used in main thread.
 	const int MAXTHREADS = DIM*DIM;
   	pthread_t threads[MAXTHREADS]; // Thread array created
@@ -154,16 +190,53 @@ int main(void) {
   	// Call init to initialize buffer variables
   	init(&buffer); 
   	// Values are read into our arrays
-  	for(int i=0;i<2;i++){
-  		printf("\n");
-  		for(int j=0;j<DIM;j++){
-  			for(int k=0;k<DIM;k++){
-  				printf("Ingrese la casilla [%d,%d] de la matriz %d: ", j+1,k+1,i+1);
-  				scanf("%d",&arrays[i][j][k]);
-  			}
-  			
-  		}
-  	}
+  	FILE   *fp;
+  	//Manual Option
+  	if (argc < 2){
+	  	for(int i=0;i<2;i++){
+	  		printf("\n");
+	  		for(int j=0;j<DIM;j++){
+	  			for(int k=0;k<DIM;k++){
+	  				printf("Ingrese la casilla [%d,%d] de la matriz %d: ", j+1,k+1,i+1);
+	  				scanf("%d",&arrays[i][j][k]);
+	  			}
+	  			
+	  		}
+	  	}
+  	} else{ //File option
+        /* Open the file and check that it exists */
+        fp = fopen (argv[1],"r");	  /* Open file for read operation */
+        if (!fp) {                               /* There is an error */
+            ErrorMsg("main","filename does not exist or is corrupted");
+        } else {
+
+       
+                while (!feof(fp))
+                {
+                	int i = 0;
+                    for(i = 0; ((i < DIM) && (!feof(fp))); i++)
+                		{
+                        /* Store values for matrices */
+                        /* Values are stored from left to right as read from the file */
+                        /* according to the size of the matrix */
+                        for (int j = 0; j < DIM ; j++)
+                        {
+                            arrays[0][i][j] = GetInt(fp);
+                        }
+
+                        for (int j = 0; j < DIM ; j++)
+                        {
+                            arrays[1][i][j] = GetInt(fp);
+                        }
+                            
+                    }
+
+                    if(feof(fp) || i == DIM)
+                      break;
+                }
+            }
+        }
+
   /* Create the threads */
 	  for (int i = 0; i < MAXTHREADS; i++){
 	  	threadName[i] = i;
