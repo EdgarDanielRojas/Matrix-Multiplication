@@ -30,6 +30,8 @@ El programa se puede correr insertando un archivo de texto o sin archivo de text
 # Text input
 The program reads the matrix with the following format in the text input 
 
-1 2 3  4 3 5
-3 4 4  2 1 6
-4 5 6  2 4 6
+1 2 3&nbsp;&nbsp;4 3 5
+
+3 4 4&nbsp;&nbsp;2 1 6
+
+4 5 6&nbsp;&nbsp;2 4 6
