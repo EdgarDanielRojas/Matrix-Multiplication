@@ -10,23 +10,24 @@ Matrix Multiplication using multiple threads for advanced programming class
 ## Observations
 First of all I would like to say that I know that the sequential read of finishing threads is inefficient, and this could be solved with something similar to the producer-consumer model where threads tell the main thread when they are finished. This makes it so that you don't wait for slower threads but in reality with the small computations that we are doing I consider that it would just add extra steps that in the end will make it do the same time. The only thing that is a bit inefficient is needing to wait for the thread that is computing the sum of the diagonal, this is because it waits until all of the threads that need to produce a diagonal sum are finished. What would be more efficient would be to make the last thread to finish compute this, as it does not need to wait for the rest of the threads, and the main thread is probably already waiting for it so that would lower our execution time in bigger matrixes. Finally I would like to mention that my algorithm is O(n^4) as I create a thread for each value of the matrix (n * n) and then each of those realizes n^2 computations. I thought this could be made into a O(n^3) solution by reducing the number of threads to only N but then the computations made by these would increase so it would be the same complexity. I would just like to say that I am ashamed of not being able to make this complexity smaller, or maybe I am calculating incorrectly. 
 
-#Compilation Instructions
-##Linux compilation
+# Compilation Instructions
+
+## Linux compilation
 
 gcc matrix.c -pthread -o matrix
 
-##MAC OSX compilation
+## MAC OSX compilation
 
 gcc matrix.c -o matrix
 
-#Running the program
+# Running the program
 El programa se puede correr insertando un archivo de texto o sin archivo de texto
 
 ./matrix archivo.txt
 
 ./matrix 
 
-#Text input
+# Text input
 The program reads the matrix with the following format in the text input 
 
 1 2 3  4 3 5
